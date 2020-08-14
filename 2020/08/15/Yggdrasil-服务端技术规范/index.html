@@ -1,0 +1,523 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yggdrasil-服务端技术规范 | zhzRedstone's blog();</title><meta name="description" content="概述本文旨在为实现 Yggdrasil 服务端提供非官方的技术规范。 本规范中所描述的服务端行为不一定与 Mojang 服务端的相同。这客观上是因为 Mojang 的服务端是闭源的，我们只能推测其内部逻辑，而所作出的推测难免会与实际存在出入。但事实上只要客户端能够正确理解并处理服务端的响应，那么其行为是否与 Mojang 服务端的相同，也就无关紧要了。 基本约定请求与响应格式若无特殊说明，请求"><meta name="keywords" content="Yggdrasil"><meta name="author" content="John Doe"><meta name="copyright" content="John Doe"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://yoursite.com/2020/08/15/Yggdrasil-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%8A%80%E6%9C%AF%E8%A7%84%E8%8C%83/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta property="og:type" content="article"><meta property="og:title" content="Yggdrasil-服务端技术规范"><meta property="og:url" content="http://yoursite.com/2020/08/15/Yggdrasil-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%8A%80%E6%9C%AF%E8%A7%84%E8%8C%83/"><meta property="og:site_name" content="zhzRedstone's blog();"><meta property="og:description" content="概述本文旨在为实现 Yggdrasil 服务端提供非官方的技术规范。 本规范中所描述的服务端行为不一定与 Mojang 服务端的相同。这客观上是因为 Mojang 的服务端是闭源的，我们只能推测其内部逻辑，而所作出的推测难免会与实际存在出入。但事实上只要客户端能够正确理解并处理服务端的响应，那么其行为是否与 Mojang 服务端的相同，也就无关紧要了。 基本约定请求与响应格式若无特殊说明，请求"><meta property="og:image" content="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg"><meta property="article:published_time" content="2020-08-14T22:21:33.000Z"><meta property="article:modified_time" content="2020-08-14T22:51:37.637Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
+  }
+}
+var activateLightMode = function () {
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
+  }
+}
+
+var getCookies = function (name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+}
+
+var autoChangeMode = 'false'
+var t = getCookies('theme')
+if (autoChangeMode === '1') {
+  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined) {
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport) {
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour <= 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+      if (Cookies.get('theme') === undefined) {
+        e.matches ? activateDarkMode() : activateLightMode()
+      }
+    })
+  } else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else if (autoChangeMode === '2') {
+  now = new Date()
+  hour = now.getHours()
+  isNight = hour <= 6 || hour >= 18
+  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else {
+  if (t === 'dark') activateDarkMode()
+  else if (t === 'light') activateLightMode()
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  hexoversion: '5.0.2',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  bookmark: {
+    message_prev: 'Press',
+    message_next: 'to bookmark this page'
+  },
+  runtime_unit: 'days',
+  runtime: false,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: undefined,
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isanchor: false    
+}</script><script id="config_change">var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: true,
+  postUpdate: '2020-08-15 06:51:37'
+}</script><noscript><style>
+#nav {
+  opacity: 1
+}
+.justified-gallery img {
+  opacity: 1
+}
+</style></noscript><meta name="generator" content="Hexo 5.0.2"></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" data-lazy-src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">Articles</div><div class="length_num">3</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">Tags</div><div class="length_num">1</div></a></div></div></div><hr/></div></div><div id="body-wrap"><div id="sidebar"><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div class="sidebar-toc"><div class="sidebar-toc__title">Catalog</div><div class="sidebar-toc__progress"><span class="progress-notice">You've read</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E7%BA%A6%E5%AE%9A"><span class="toc-number">2.</span> <span class="toc-text">基本约定</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82%E4%B8%8E%E5%93%8D%E5%BA%94%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.1.</span> <span class="toc-text">请求与响应格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%99%E8%AF%AF%E4%BF%A1%E6%81%AF%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.2.</span> <span class="toc-text">错误信息格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F"><span class="toc-number">2.3.</span> <span class="toc-text">数据格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B"><span class="toc-number">2.4.</span> <span class="toc-text">模型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%94%A8%E6%88%B7"><span class="toc-number">2.4.1.</span> <span class="toc-text">用户</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E4%BF%A1%E6%81%AF%E7%9A%84%E5%BA%8F%E5%88%97%E5%8C%96"><span class="toc-number">2.4.1.1.</span> <span class="toc-text">用户信息的序列化</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%92%E8%89%B2%EF%BC%88Profile%EF%BC%89"><span class="toc-number">2.4.2.</span> <span class="toc-text">角色（Profile）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A7%92%E8%89%B2-UUID-%E7%9A%84%E7%94%9F%E6%88%90"><span class="toc-number">2.4.2.1.</span> <span class="toc-text">角色 UUID 的生成</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%85%BC%E5%AE%B9%E7%A6%BB%E7%BA%BF%E9%AA%8C%E8%AF%81"><span class="toc-number">2.4.2.1.1.</span> <span class="toc-text">兼容离线验证</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%A7%92%E8%89%B2%E4%BF%A1%E6%81%AF%E7%9A%84%E5%BA%8F%E5%88%97%E5%8C%96"><span class="toc-number">2.4.2.2.</span> <span class="toc-text">角色信息的序列化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9D%90%E8%B4%A8-URL-%E8%A7%84%E8%8C%83"><span class="toc-number">2.4.2.3.</span> <span class="toc-text">材质 URL 规范</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E4%B8%8A%E4%BC%A0%E6%9D%90%E8%B4%A8%E7%9A%84%E5%AE%89%E5%85%A8%E6%80%A7"><span class="toc-number">2.4.2.4.</span> <span class="toc-text">用户上传材质的安全性</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A4%E7%89%8C%EF%BC%88Token%EF%BC%89"><span class="toc-number">2.4.3.</span> <span class="toc-text">令牌（Token）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%A4%E7%89%8C%E7%9A%84%E7%8A%B6%E6%80%81"><span class="toc-number">2.4.3.1.</span> <span class="toc-text">令牌的状态</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Yggdrasil-API"><span class="toc-number">3.</span> <span class="toc-text">Yggdrasil API</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E9%83%A8%E5%88%86"><span class="toc-number">3.1.</span> <span class="toc-text">用户部分</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%99%BB%E5%BD%95"><span class="toc-number">3.1.1.</span> <span class="toc-text">登录</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%B7%E6%96%B0"><span class="toc-number">3.1.2.</span> <span class="toc-text">刷新</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81%E4%BB%A4%E7%89%8C"><span class="toc-number">3.1.3.</span> <span class="toc-text">验证令牌</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8A%E9%94%80%E4%BB%A4%E7%89%8C"><span class="toc-number">3.1.4.</span> <span class="toc-text">吊销令牌</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%99%BB%E5%87%BA"><span class="toc-number">3.1.5.</span> <span class="toc-text">登出</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%9A%E8%AF%9D%E9%83%A8%E5%88%86"><span class="toc-number">3.2.</span> <span class="toc-text">会话部分</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%BF%9B%E5%85%A5%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">3.2.1.</span> <span class="toc-text">客户端进入服务器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%8D%E5%8A%A1%E7%AB%AF%E9%AA%8C%E8%AF%81%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="toc-number">3.2.2.</span> <span class="toc-text">服务端验证客户端</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%92%E8%89%B2%E9%83%A8%E5%88%86"><span class="toc-number">3.3.</span> <span class="toc-text">角色部分</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%A7%92%E8%89%B2%E5%B1%9E%E6%80%A7"><span class="toc-number">3.3.1.</span> <span class="toc-text">查询角色属性</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8C%89%E5%90%8D%E7%A7%B0%E6%89%B9%E9%87%8F%E6%9F%A5%E8%AF%A2%E8%A7%92%E8%89%B2"><span class="toc-number">3.3.2.</span> <span class="toc-text">按名称批量查询角色</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%89%A9%E5%B1%95-API"><span class="toc-number">4.</span> <span class="toc-text">扩展 API</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%8D%E5%8A%A1%E7%AB%AF%E4%BF%A1%E6%81%AF%E8%8E%B7%E5%8F%96"><span class="toc-number">4.1.</span> <span class="toc-text">服务端信息获取</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#API-%E5%9C%B0%E5%9D%80%E6%8C%87%E7%A4%BA%EF%BC%88ALI%EF%BC%89"><span class="toc-number">5.</span> <span class="toc-text">API 地址指示（ALI）</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%A7%81"><span class="toc-number">6.</span> <span class="toc-text">参见</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E5%AE%9E%E7%8E%B0"><span class="toc-number">7.</span> <span class="toc-text">参考实现</span></a></li></ol></div></div></div><header class="post-bg" id="page-header" style="background-image: url(https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="/">zhzRedstone's blog();</a></span><span class="pull-right menus"><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">Yggdrasil-服务端技术规范</div></div><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2020-08-14T22:21:33.000Z" title="Created 2020-08-15 06:21:33">2020-08-15</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2020-08-14T22:51:37.637Z" title="Updated 2020-08-15 06:51:37">2020-08-15</time></span></div><div class="meta-secondline"> <span class="post-meta-separator">|</span><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文旨在为实现 Yggdrasil 服务端提供非官方的技术规范。</p>
+<p>本规范中所描述的服务端行为不一定与 Mojang 服务端的相同。<br>这客观上是因为 Mojang 的服务端是闭源的，我们只能推测其内部逻辑，而所作出的推测难免会与实际存在出入。<br>但事实上只要客户端能够正确理解并处理服务端的响应，那么其行为是否与 Mojang 服务端的相同，也就无关紧要了。</p>
+<h1 id="基本约定"><a href="#基本约定" class="headerlink" title="基本约定"></a>基本约定</h1><h2 id="请求与响应格式"><a href="#请求与响应格式" class="headerlink" title="请求与响应格式"></a>请求与响应格式</h2><p>若无特殊说明，请求与响应均为 JSON 格式（如果有 body），<code>Content-Type</code> 均为 <code>application/json; charset=utf-8</code>。</p>
+<p>所有 API 都应该使用 HTTPS 协议。</p>
+<h2 id="错误信息格式"><a href="#错误信息格式" class="headerlink" title="错误信息格式"></a>错误信息格式</h2><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;error&quot;</span>:<span class="string">&quot;错误的简要描述（机器可读）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;errorMessage&quot;</span>:<span class="string">&quot;错误的详细信息（人类可读）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;cause&quot;</span>:<span class="string">&quot;该错误的原因（可选）&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当遇到本文中已说明的异常情况时，返回的错误信息应符合对应的要求。</p>
+<p>下表列举了常见异常情况下的错误信息。除特殊说明外，<code>cause</code> 一般不包含。</p>
+<p><strong>非标准</strong>指由于无法使 Mojang 的 Yggdrasil 服务器触发对应异常，而只能推测该种情况下的错误信息。</p>
+<p><strong>未定义</strong>指该项并没有明确要求。</p>
+<table>
+<thead>
+<tr>
+<th>异常情况</th>
+<th>HTTP状态码</th>
+<th>Error</th>
+<th>Error Message</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一般 HTTP 异常（非业务异常，如 _Not Found_、_Method Not Allowed_）</td>
+<td><em>未定义</em></td>
+<td><em>该 HTTP 状态对应的 Reason Phrase（于 <a target="_blank" rel="noopener" href="https://tools.ietf.org/html/rfc2616#section-6.1.1">HTTP/1.1</a> 中定义）</em></td>
+<td><em>未定义</em></td>
+</tr>
+<tr>
+<td>令牌无效</td>
+<td>403</td>
+<td>ForbiddenOperationException</td>
+<td>Invalid token.</td>
+</tr>
+<tr>
+<td>密码错误，或短时间内多次登录失败而被暂时禁止登录</td>
+<td>403</td>
+<td>ForbiddenOperationException</td>
+<td>Invalid credentials. Invalid username or password.</td>
+</tr>
+<tr>
+<td>试图向一个已经绑定了角色的令牌指定其要绑定的角色</td>
+<td>400</td>
+<td>IllegalArgumentException</td>
+<td>Access token already has a profile assigned.</td>
+</tr>
+<tr>
+<td>试图向一个令牌绑定不属于其对应用户的角色 <em>（非标准）</em></td>
+<td>403</td>
+<td>ForbiddenOperationException</td>
+<td><em>未定义</em></td>
+</tr>
+<tr>
+<td>试图使用一个错误的角色加入服务器</td>
+<td>403</td>
+<td>ForbiddenOperationException</td>
+<td>Invalid token.</td>
+</tr>
+</tbody></table>
+<h2 id="数据格式"><a href="#数据格式" class="headerlink" title="数据格式"></a>数据格式</h2><p>我们约定以下数据格式</p>
+<ul>
+<li><strong>无符号 UUID</strong>: 指去掉所有 <code>-</code> 字符后的 UUID 字符串</li>
+</ul>
+<h2 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h2><h3 id="用户"><a href="#用户" class="headerlink" title="用户"></a>用户</h3><p>一个系统中可以存在若干个用户，用户具有以下属性：</p>
+<ul>
+<li>ID</li>
+<li>邮箱</li>
+<li>密码</li>
+</ul>
+<p>其中 ID 为一个无符号 UUID。邮箱可以变更，但需要保证唯一。</p>
+<h4 id="用户信息的序列化"><a href="#用户信息的序列化" class="headerlink" title="用户信息的序列化"></a>用户信息的序列化</h4><p>用户信息序列化后符合以下格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;id&quot;</span>:<span class="string">&quot;用户的 ID&quot;</span>,</span><br><span class="line">    <span class="string">&quot;properties&quot;</span>:[ <span class="comment">// 用户的属性（数组，每一元素为一个属性）</span></span><br><span class="line">        &#123; <span class="comment">// 一项属性</span></span><br><span class="line">            <span class="string">&quot;name&quot;</span>:<span class="string">&quot;属性的键&quot;</span>,</span><br><span class="line">            <span class="string">&quot;value&quot;</span>:<span class="string">&quot;属性的值&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ,...（可以有更多）</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>用户属性中目前已知的键如下（并不一定会包含）：</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>对应的值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>preferredLanguage</td>
+<td>用户的偏好语言，<a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/8/docs/api/java/util/Locale.html#toString--">Java Locale 格式</a>(?)，例如 <code>en</code>、<code>zh_CN</code></td>
+</tr>
+</tbody></table>
+<h3 id="角色（Profile）"><a href="#角色（Profile）" class="headerlink" title="角色（Profile）"></a>角色（Profile）</h3><blockquote>
+<p>Mojang 当前不支持多角色，不保证多角色部分内容的正确性。</p>
+</blockquote>
+<p>角色与账号为多对一关系。一个角色对应 Minecraft 中的一个实体玩家。角色具有以下属性：</p>
+<ul>
+<li>UUID</li>
+<li>名称</li>
+<li>材质模型，可选值有：<code>default</code>、<code>slim</code><ul>
+<li><strong>default</strong>：正常手臂宽度（4px）的皮肤</li>
+<li><strong>slim</strong>：细手臂（3px）的皮肤</li>
+</ul>
+</li>
+<li>材质<ul>
+<li>类型为映射</li>
+<li>key 可选值有：SKIN、CAPE</li>
+<li>value 类型为 URL</li>
+</ul>
+</li>
+</ul>
+<p>UUID 和名称均为全局唯一，但名称可变。应避免使用名称作为标识。</p>
+<h4 id="角色-UUID-的生成"><a href="#角色-UUID-的生成" class="headerlink" title="角色 UUID 的生成"></a>角色 UUID 的生成</h4><p>若不考虑兼容性，角色的 UUID 一般为随机生成（<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)">Version 4</a>）。</p>
+<p>但 Minecraft 仅使用 UUID 作为角色标识符，不同 UUID 的角色即使名称相同也被认为是不同的。如果一个 Minecraft 服务器从其他登录系统（正版验证、离线验证或其他）迁移到本登录系统，并且角色的 UUID 发生了变化，则该角色的数据将丢失。为了避免这种情况，必须保证对于同一个角色，本系统生成的 UUID 与其在先前系统中的 UUID 是相同的。</p>
+<h5 id="兼容离线验证"><a href="#兼容离线验证" class="headerlink" title="兼容离线验证"></a>兼容离线验证</h5><p>若 Minecraft 服务器原先采用的是离线验证，则角色 UUID 是角色名称的一元函数。如果 Yggdrasil 服务端使用此方法生成角色 UUID，就可以实现与离线验证系统之间的双向兼容，即可以在不丢失角色数据的情况下，在离线验证系统和本登录系统之间切换。</p>
+<p>从角色名称计算角色 UUID 的代码如下（Java）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UUID.nameUUIDFromBytes((<span class="string">&quot;OfflinePlayer:&quot;</span> + characterName).getBytes(StandardCharsets.UTF_8))</span><br></pre></td></tr></table></figure>
+
+<p>在其他语言中的实现：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://gist.github.com/games647/2b6a00a8fc21fd3b88375f03c9e2e603">PHP</a></li>
+</ul>
+<h4 id="角色信息的序列化"><a href="#角色信息的序列化" class="headerlink" title="角色信息的序列化"></a>角色信息的序列化</h4><p>角色信息序列化后符合以下格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;id&quot;</span>:<span class="string">&quot;角色 UUID（无符号）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;name&quot;</span>:<span class="string">&quot;角色名称&quot;</span>,</span><br><span class="line">    <span class="string">&quot;properties&quot;</span>:[ <span class="comment">// 角色的属性（数组，每一元素为一个属性）（仅在特定情况下需要包含）</span></span><br><span class="line">        &#123; <span class="comment">// 一项属性</span></span><br><span class="line">            <span class="string">&quot;name&quot;</span>:<span class="string">&quot;属性的键&quot;</span>,</span><br><span class="line">            <span class="string">&quot;value&quot;</span>:<span class="string">&quot;属性的值&quot;</span>,</span><br><span class="line">            <span class="string">&quot;signature&quot;</span>:<span class="string">&quot;属性值的数字签名（仅在特定情况下需要包含）&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ,...（可以有更多）</span></span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>角色属性（<code>properties</code>）及数字签名（<code>signature</code>）在无特殊说明的情况下不需要包含。</p>
+<p><code>signature</code> 是一个 Base64 字符串，其中包含属性值（使用 UTF-8 编码）的数字签名（使用 SHA1withRSA 算法，见 <a target="_blank" rel="noopener" href="https://www.rfc-editor.org/rfc/rfc2437.txt">PKCS #1</a>）。关于签名密钥的详细介绍，见 <a target="_blank" rel="noopener" href="https://github.com/yushijinhun/authlib-injector/wiki/%E7%AD%BE%E5%90%8D%E5%AF%86%E9%92%A5%E5%AF%B9">签名密钥对</a>。</p>
+<p>角色属性中目前已知的键有 <code>textures</code>（并不一定会包含）。它对应的值是一个 Base64 字符串，内容为 JSON 字符串，包含角色的材质信息，格式如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;timestamp&quot;</span>:该属性值被生成时的时间戳（Java 时间戳格式，即自 <span class="number">1970</span><span class="number">-01</span><span class="number">-01</span> <span class="number">00</span>:<span class="number">00</span>:<span class="number">00</span> UTC 至今经过的毫秒数）,</span><br><span class="line">    <span class="string">&quot;profileId&quot;</span>:<span class="string">&quot;角色 UUID（无符号）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;profileName&quot;</span>:<span class="string">&quot;角色名称&quot;</span>,</span><br><span class="line">    <span class="string">&quot;textures&quot;</span>:&#123; <span class="comment">// 角色的材质</span></span><br><span class="line">        <span class="string">&quot;材质类型（如 SKIN）&quot;</span>:&#123; <span class="comment">// 若角色不具有该项材质，则不必包含</span></span><br><span class="line">            <span class="string">&quot;url&quot;</span>:<span class="string">&quot;材质的 URL&quot;</span>,</span><br><span class="line">            <span class="string">&quot;metadata&quot;</span>:&#123; <span class="comment">// 材质的元数据，若没有则不必包含</span></span><br><span class="line">                <span class="string">&quot;键&quot;</span>:<span class="string">&quot;值&quot;</span></span><br><span class="line">                <span class="comment">// ,...（可以有更多）</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ,...（可以有更多）</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>材质元数据中目前已知的键有 <code>model</code>，其对应该角色的材质模型，取值为 <code>default</code> 或 <code>slim</code>。</p>
+<h4 id="材质-URL-规范"><a href="#材质-URL-规范" class="headerlink" title="材质 URL 规范"></a>材质 URL 规范</h4><p>Minecraft 将材质 hash 作为材质的标识。每当客户端下载一个材质后，便会将其缓存在本地，以后若需要相同 hash 的材质，则会直接使用缓存。<br>而这个 hash 并不是由客户端计算的。Yggdrasil 服务端应先计算好材质 hash，将其作为材质 URL 的文件名，即从 URL 最后一个 <code>/</code>（不包括）开始一直到结尾的这一段子串。<br>而客户端会直接将 URL 的文件名作为材质的 hash。</p>
+<p>例如下面这个 URL，它所代表的材质的 hash 为 <code>e051c27e803ba15de78a1d1e83491411dffb6d7fd2886da0a6c34a2161f7ca99</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https:&#x2F;&#x2F;yggdrasil.example.com&#x2F;textures&#x2F;e051c27e803ba15de78a1d1e83491411dffb6d7fd2886da0a6c34a2161f7ca99</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>安全警告：</p>
+<ul>
+<li>材质 URL 响应头中的 <code>Content-Type</code> 必须为 <code>image/png</code>。若未指定，则存在 MIME Sniffing Attack 的风险。</li>
+</ul>
+</blockquote>
+<p>由于 PNG 格式图像包含与显示无关的数据，因此即使是图像尺寸与内容完全相同的 PNG 文件，它们的 hash 值也可能不同。<br>为此，需要使用一个仅与图像内容有关的方法来计算材质的 hash。规定这个方法如下：</p>
+<ol>
+<li>首先创建一个长度为 <code>(width * height * 4 + 8)</code> 字节的缓冲区，其中 <code>width</code> 和 <code>height</code> 为图像的长和宽</li>
+<li>填充该缓冲区<ol>
+<li><code>0~3</code> 字节为 <code>width</code>，以大端序存储</li>
+<li><code>4~7</code> 字节为 <code>height</code>，以大端序存储</li>
+<li>对于每一个像素，设其坐标为 <code>(x, y)</code>，其首地址 <code>offset</code> 为 <code>((y + x * height) * 4 + 8)</code><ol>
+<li>第 <code>(offset + 0)</code>、<code>(offset + 1)</code>、<code>(offset + 2)</code>、<code>(offset + 3)</code> 个字节分别为该像素的 Alpha、Red、Green、Blue 分量</li>
+<li>若 Alpha 分量为 <code>0x00</code>（透明），则 RGB 分量皆作为 <code>0x00</code> 处理</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>计算以上缓冲区内数据的 <code>SHA-256</code>，作为材质的 hash</li>
+</ol>
+<blockquote>
+<p>目前无法确定 Mojang 所使用的 hash 算法，其输出长度（61 个 hex 字符）不属于任何已知 hash 算法。<br>如果使用 SHA-256 作为 hash 算法，由于输出长度不同，不会与 Mojang 的 hash 算法发生冲突，因此是可行的。</p>
+</blockquote>
+<details>
+<summary>Java 实现示例</summary>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">textureHash</span><span class="params">(BufferedImage img)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    MessageDigest digest = MessageDigest.getInstance(<span class="string">&quot;SHA-256&quot;</span>);</span><br><span class="line">    <span class="keyword">int</span> width = img.getWidth();</span><br><span class="line">    <span class="keyword">int</span> height = img.getHeight();</span><br><span class="line">    <span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">4096</span>];</span><br><span class="line"></span><br><span class="line">    putInt(buf, <span class="number">0</span>, width); <span class="comment">// 0~3: width(big-endian)</span></span><br><span class="line">    putInt(buf, <span class="number">4</span>, height); <span class="comment">// 4~7: height(big-endian)</span></span><br><span class="line">    <span class="keyword">int</span> pos = <span class="number">8</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> x = <span class="number">0</span>; x &lt; width; x++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> y = <span class="number">0</span>; y &lt; height; y++) &#123;</span><br><span class="line">            <span class="comment">// pos+0: alpha</span></span><br><span class="line">            <span class="comment">// pos+1: red</span></span><br><span class="line">            <span class="comment">// pos+2: green</span></span><br><span class="line">            <span class="comment">// pos+3: blue</span></span><br><span class="line">            putInt(buf, pos, img.getRGB(x, y));</span><br><span class="line">            <span class="keyword">if</span> (buf[pos + <span class="number">0</span>] == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">// the pixel is transparent</span></span><br><span class="line">                buf[pos + <span class="number">1</span>] = buf[pos + <span class="number">2</span>] = buf[pos + <span class="number">3</span>] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            pos += <span class="number">4</span>;</span><br><span class="line">            <span class="keyword">if</span> (pos == buf.length) &#123;</span><br><span class="line">                <span class="comment">// buffer is full</span></span><br><span class="line">                pos = <span class="number">0</span>;</span><br><span class="line">                digest.update(buf, <span class="number">0</span>, buf.length);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (pos &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// flush</span></span><br><span class="line">        digest.update(buf, <span class="number">0</span>, pos);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">byte</span>[] sha256 = digest.digest();</span><br><span class="line">    <span class="keyword">return</span> String.format(<span class="string">&quot;%0&quot;</span> + (sha256.length &lt;&lt; <span class="number">1</span>) + <span class="string">&quot;x&quot;</span>, <span class="keyword">new</span> BigInteger(<span class="number">1</span>, sha256)); <span class="comment">// to hex</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// put an int into the array in big-endian</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">putInt</span><span class="params">(<span class="keyword">byte</span>[] array, <span class="keyword">int</span> offset, <span class="keyword">int</span> x)</span> </span>&#123;</span><br><span class="line">    array[offset + <span class="number">0</span>] = (<span class="keyword">byte</span>) (x &gt;&gt; <span class="number">24</span> &amp; <span class="number">0xff</span>);</span><br><span class="line">    array[offset + <span class="number">1</span>] = (<span class="keyword">byte</span>) (x &gt;&gt; <span class="number">16</span> &amp; <span class="number">0xff</span>);</span><br><span class="line">    array[offset + <span class="number">2</span>] = (<span class="keyword">byte</span>) (x &gt;&gt; <span class="number">8</span> &amp; <span class="number">0xff</span>);</span><br><span class="line">    array[offset + <span class="number">3</span>] = (<span class="keyword">byte</span>) (x &gt;&gt; <span class="number">0</span> &amp; <span class="number">0xff</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</details>
+
+<details>
+<summary>JavaScript 实现示例</summary>
+
+<blockquote>
+<p>本实现使用了 <a target="_blank" rel="noopener" href="https://www.npmjs.com/package/pngjs-nozlib">pngjs-nozlib</a>。</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> crypto = <span class="built_in">require</span>(<span class="string">&quot;crypto&quot;</span>);</span><br><span class="line"><span class="keyword">let</span> PNG = <span class="built_in">require</span>(<span class="string">&quot;pngjs-nozlib&quot;</span>).PNG;</span><br><span class="line"><span class="keyword">let</span> fs = <span class="built_in">require</span>(<span class="string">&quot;fs&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">computeTextureHash</span>(<span class="params">image</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> bufSize = <span class="number">8192</span>;</span><br><span class="line">    <span class="keyword">let</span> hash = crypto.createHash(<span class="string">&quot;sha256&quot;</span>);</span><br><span class="line">    <span class="keyword">let</span> buf = Buffer.allocUnsafe(bufSize);</span><br><span class="line">    <span class="keyword">let</span> width = image.width;</span><br><span class="line">    <span class="keyword">let</span> height = image.height;</span><br><span class="line">    buf.writeUInt32BE(width, <span class="number">0</span>);</span><br><span class="line">    buf.writeUInt32BE(height, <span class="number">4</span>);</span><br><span class="line">    <span class="keyword">let</span> pos = <span class="number">8</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> x = <span class="number">0</span>; x &lt; width; x++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">let</span> y = <span class="number">0</span>; y &lt; height; y++) &#123;</span><br><span class="line">            <span class="keyword">let</span> imgidx = (width * y + x) &lt;&lt; <span class="number">2</span>;</span><br><span class="line">            <span class="keyword">let</span> alpha = image.data[imgidx + <span class="number">3</span>];</span><br><span class="line">            buf.writeUInt8(alpha, pos + <span class="number">0</span>);</span><br><span class="line">            <span class="keyword">if</span> (alpha === <span class="number">0</span>) &#123;</span><br><span class="line">                buf.writeUInt8(<span class="number">0</span>, pos + <span class="number">1</span>);</span><br><span class="line">                buf.writeUInt8(<span class="number">0</span>, pos + <span class="number">2</span>);</span><br><span class="line">                buf.writeUInt8(<span class="number">0</span>, pos + <span class="number">3</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                buf.writeUInt8(image.data[imgidx + <span class="number">0</span>], pos + <span class="number">1</span>);</span><br><span class="line">                buf.writeUInt8(image.data[imgidx + <span class="number">1</span>], pos + <span class="number">2</span>);</span><br><span class="line">                buf.writeUInt8(image.data[imgidx + <span class="number">2</span>], pos + <span class="number">3</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            pos += <span class="number">4</span>;</span><br><span class="line">            <span class="keyword">if</span> (pos === bufSize) &#123;</span><br><span class="line">                pos = <span class="number">0</span>;</span><br><span class="line">                hash.update(buf);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (pos &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        hash.update(buf.slice(<span class="number">0</span>, pos));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> hash.digest(<span class="string">&quot;hex&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">console</span>.info(computeTextureHash(PNG.sync.read(fs.readFileSync(<span class="string">&quot;texture-hash-test.png&quot;</span>))));</span><br></pre></td></tr></table></figure>
+
+</details>
+
+<details>
+<summary>测试样例</summary>
+
+<blockquote>
+<p>样例输入：<a target="_blank" rel="noopener" href="https://raw.githubusercontent.com/wiki/yushijinhun/authlib-injector/texture-hash-test.png">texture-hash-test.png</a></p>
+<p>样例输出：<code>47a4c518f80f94ad8737713e0325a98e1f2647f962b9a646f58cd0bbd5afe683</code></p>
+<p>使用上述方法将图片读入到缓冲区，缓冲区中内容如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">00 00 00 02 &#x2F;&#x2F; 宽度：2</span><br><span class="line">00 00 00 03 &#x2F;&#x2F; 高度：3</span><br><span class="line">ff ff 00 00 &#x2F;&#x2F; 像素 (0,0)：红</span><br><span class="line">ff 00 00 ff &#x2F;&#x2F; 像素 (0,1)：蓝</span><br><span class="line">ff ff 00 ff &#x2F;&#x2F; 像素 (0,2)：紫</span><br><span class="line">ff 00 ff 00 &#x2F;&#x2F; 像素 (1,0)：绿</span><br><span class="line">00 00 00 00 &#x2F;&#x2F; 像素 (1,1)：透明</span><br><span class="line">ff ff ff 00 &#x2F;&#x2F; 像素 (1,2)：黄</span><br></pre></td></tr></table></figure>
+</blockquote>
+</details>
+
+
+<p>建议所有 Yggdrasil 服务端实现都应将上述算法作为材质 hash 的计算方法。<br>这样可以确保即使相同的材质来自不同的 Yggdrasil 服务端，它们的 hash 也是相同的，进而避免客户端不必要的重复下载和存储。</p>
+<h4 id="用户上传材质的安全性"><a href="#用户上传材质的安全性" class="headerlink" title="用户上传材质的安全性"></a>用户上传材质的安全性</h4><blockquote>
+<p>安全警告：</p>
+<ul>
+<li>若不对用户上传材质进行处理，则<strong>可能导致远程代码执行</strong></li>
+<li>在读取材质前，若不先检查图像大小，则<strong>可导致拒绝服务攻击</strong></li>
+</ul>
+<p>关于此安全缺陷的详细信息：<a target="_blank" rel="noopener" href="https://github.com/yushijinhun/authlib-injector/issues/10">未经检查的用户上传材质可能导致远程代码执行 #10</a></p>
+</blockquote>
+<p>除了位图数据外，PNG 文件还可以存储其他数据。如果 Yggdrasil 服务端不对用户上传的材质进行检查，则攻击者可以在其中藏匿恶意代码，并通过 Yggdrasil 服务端分发到客户端。因此，Yggdrasil 服务端<strong>必须</strong>对用户上传的材质进行处理，除去其中任何与位图无关的数据。具体做法如下：</p>
+<ol>
+<li>读取该 PNG 文件中图像的大小，如果过大则应拒绝。<ul>
+<li>即使是非常小的 PNG 文件也可以存储一幅足以消耗计算机所有内存的图像（即 PNG Bomb），因此切不可在检查图像大小前就将其完整读入。</li>
+</ul>
+</li>
+<li>检查图像是否为合法的皮肤/披风材质。<ul>
+<li>皮肤的宽高为 64x32 的整数倍或 64x64 的整数倍，披风的宽高为 64x32 的整数倍或 22x17 的整数倍。宽高为 22x17 整数倍的披风并非标准尺寸的披风，服务端需要用透明像素将其宽高补足至 64x32 的整数倍。</li>
+</ul>
+</li>
+<li>计算该材质的 hash（<a href="#%E6%9D%90%E8%B4%A8-url-%E8%A7%84%E8%8C%83">计算方法见上</a>），并将其位图数据保存。<ul>
+<li>切不可直接保存用户上传的 PNG 文件。</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>实现提示：在 Java 中可使用 <a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/10/docs/api/javax/imageio/ImageReader.html#getWidth(int)"><code>ImageReader.getWidth()</code></a> 在不读入整个图像的情况下获取其尺寸。</p>
+</blockquote>
+<h3 id="令牌（Token）"><a href="#令牌（Token）" class="headerlink" title="令牌（Token）"></a>令牌（Token）</h3><p>令牌与账号为多对一关系。令牌是一种登录凭证，具有时效性。令牌具有以下属性：</p>
+<ul>
+<li>accessToken</li>
+<li>clientToken</li>
+<li>绑定的角色</li>
+<li>颁发时间</li>
+</ul>
+<p>其中 <code>accessToken</code> 和 <code>clientToken</code> 为任意字符串（可以是无符号 UUID 或 JWT）。<code>accessToken</code> 由服务端随机生成，<code>clientToken</code> 由客户端提供。</p>
+<p>介于 <code>accessToken</code> 的随机性，它可以被作为主键。而 <code>clientToken</code> 不具有唯一性。</p>
+<p>绑定的角色可以为空。它代表了能使用该令牌进行游戏的角色。</p>
+<p>一个用户可以同时有多个令牌，但服务端也应该对令牌数量加以限制。当令牌数量超出限制（如 10 个）时，则应先吊销最旧的令牌，之后再颁发新的令牌。</p>
+<h4 id="令牌的状态"><a href="#令牌的状态" class="headerlink" title="令牌的状态"></a>令牌的状态</h4><p>令牌有以下三种状态：</p>
+<ul>
+<li><strong>有效</strong><ul>
+<li>处于该状态的令牌可以进行各项操作，如<a href="#%E4%BC%9A%E8%AF%9D%E9%83%A8%E5%88%86">进服验证</a>、<a href="#%E5%88%B7%E6%96%B0">刷新</a>。</li>
+<li>新颁发的令牌（即通过<a href="#%E7%99%BB%E5%BD%95">登录</a>、<a href="#%E5%88%B7%E6%96%B0">刷新</a>颁发的令牌）处于该状态。</li>
+</ul>
+</li>
+<li><strong>暂时失效</strong><ul>
+<li>处于该状态的令牌除了进行<a href="#%E5%88%B7%E6%96%B0">刷新操作</a>外，无权进行任何操作。</li>
+<li><em>该状态并不是必须要实现的（详细介绍见下）。</em></li>
+</ul>
+</li>
+<li><strong>无效</strong><ul>
+<li>处于该状态的令牌无权进行任何操作。</li>
+<li>令牌被吊销后处于该状态。这里的吊销包括<a href="#%E5%90%8A%E9%94%80%E4%BB%A4%E7%89%8C">显式吊销</a>、<a href="#%E7%99%BB%E5%87%BA">登出</a>、<a href="#%E5%88%B7%E6%96%B0">刷新</a>后吊销原令牌、令牌过期。</li>
+</ul>
+</li>
+</ul>
+<p>令牌的状态只能由有效变为无效，或是由有效变为暂时失效再变为无效，这个过程是不可逆的。<br>刷新操作仅颁发一个新的令牌，并不能使原令牌重新回到有效状态。</p>
+<p>令牌应当有一个过期时限（如 15 天）。当自颁发起所经过的时间超过该时限时，令牌过期。</p>
+<blockquote>
+<p><strong>关于暂时失效状态</strong></p>
+<p>Mojang 对暂时失效状态的实现是这样的：<br>对启动器而言，若令牌处于暂时失效状态，则会刷新令牌，获得一个新的处于有效状态的令牌；<br>对 Yggdrasil 服务端而言，仅最后颁发的令牌才是有效的，先前颁发的其它令牌都处于暂时失效状态。</p>
+<p>Mojang 之所以这么做，可能是为了防止用户多地同时登录（仅使最后一个 session 有效）。但事实上，即使服务端没有实现暂时失效状态，启动器的逻辑也是可以正常工作的。</p>
+<p>当然，就算我们要实现暂时失效状态，也并不需要以 Mojang 的实现为范本。只需要启动器能够正确处理，任何实现都是可以的。下面给出一个不同于 Mojang 的实现的例子：</p>
+<blockquote>
+<p>取一个短于令牌过期时限的时间段作为有效和暂时失效的分界点。若自颁发起经过的时间在该时限内，则令牌有效；若超过该时限，但仍在过期时限内，则令牌暂时失效。</p>
+<p>这种做法实现了这样的功能：玩家如果经常进行登录操作，除了第一次登录就不需要输入密码了。而当他长时间未登录时则需要重新输入密码。</p>
+</blockquote>
+</blockquote>
+<h1 id="Yggdrasil-API"><a href="#Yggdrasil-API" class="headerlink" title="Yggdrasil API"></a>Yggdrasil API</h1><h2 id="用户部分"><a href="#用户部分" class="headerlink" title="用户部分"></a>用户部分</h2><h3 id="登录"><a href="#登录" class="headerlink" title="登录"></a>登录</h3><p><code>POST /authserver/authenticate</code></p>
+<p>使用邮箱和密码进行身份验证，并分配一个新的令牌。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;username&quot;</span>:<span class="string">&quot;邮箱&quot;</span>,</span><br><span class="line">    <span class="string">&quot;password&quot;</span>:<span class="string">&quot;密码&quot;</span>,</span><br><span class="line">    <span class="string">&quot;clientToken&quot;</span>:<span class="string">&quot;由客户端指定的令牌的 clientToken（可选）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;requestUser&quot;</span>:<span class="literal">true</span>/<span class="literal">false</span>, <span class="comment">// 是否在响应中包含用户信息，默认 false</span></span><br><span class="line">    <span class="string">&quot;agent&quot;</span>:&#123;</span><br><span class="line">        <span class="string">&quot;name&quot;</span>:<span class="string">&quot;Minecraft&quot;</span>,</span><br><span class="line">        <span class="string">&quot;version&quot;</span>:<span class="number">1</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>若请求中未包含 <code>clientToken</code>，服务端应该随机生成一个无符号 UUID 作为 <code>clientToken</code>。但需要注意 <code>clientToken</code> 可以为任何字符串，即请求中提供任何 <code>clientToken</code> 都是可以接受的，不一定要为无符号 UUID。</p>
+<p>对于令牌要绑定的角色：若用户没有任何角色，则为空；若用户仅有一个角色，那么通常绑定到该角色；若用户有多个角色，通常为空，以便客户端进行选择。也就是说如果绑定的角色为空，则需要客户端进行角色选择。</p>
+<p>响应格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;accessToken&quot;</span>:<span class="string">&quot;令牌的 accessToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;clientToken&quot;</span>:<span class="string">&quot;令牌的 clientToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;availableProfiles&quot;</span>:[ <span class="comment">// 用户可用角色列表</span></span><br><span class="line">        <span class="comment">// ,... 每一项为一个角色（格式见 §角色信息的序列化）</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">&quot;selectedProfile&quot;</span>:&#123;</span><br><span class="line">        <span class="comment">// ... 绑定的角色，若为空，则不需要包含（格式见 §角色信息的序列化）</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;user&quot;</span>:&#123;</span><br><span class="line">        <span class="comment">// ... 用户信息（仅当请求中 requestUser 为 true 时包含，格式见 §用户信息的序列化）</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>安全提示：</strong> 该 API 可以被用于密码暴力破解，应受到速率限制。限制应针对用户，而不是客户端 IP。</p>
+<h3 id="刷新"><a href="#刷新" class="headerlink" title="刷新"></a>刷新</h3><p><code>POST /authserver/refresh</code></p>
+<p>吊销原令牌，并颁发一个新的令牌。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;accessToken&quot;</span>:<span class="string">&quot;令牌的 accessToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;clientToken&quot;</span>:<span class="string">&quot;令牌的 clientToken（可选）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;requestUser&quot;</span>:<span class="literal">true</span>/<span class="literal">false</span>, <span class="comment">// 是否在响应中包含用户信息，默认 false</span></span><br><span class="line">    <span class="string">&quot;selectedProfile&quot;</span>:&#123;</span><br><span class="line">        <span class="comment">// ... 要选择的角色（可选，格式见 §角色信息的序列化）</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当指定 <code>clientToken</code> 时，服务端应检查 <code>accessToken</code> 和 <code>clientToken</code> 是否有效，否则只需要检查 <code>accessToken</code>。</p>
+<p>颁发的新令牌的 <code>clientToken</code> 应与原令牌的相同。</p>
+<p>如果请求中包含 <code>selectedProfile</code>，那么这就是一个选择角色的操作。此操作要求原令牌所绑定的角色为空，而新令牌则将绑定到 <code>selectedProfile</code> 所指定的角色上。如果不包含 <code>selectedProfile</code>，那么新令牌所绑定的角色和原令牌相同。</p>
+<p>刷新操作在令牌暂时失效时依然可以执行。若请求失败，原令牌依然有效。</p>
+<p>响应格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;accessToken&quot;</span>:<span class="string">&quot;新令牌的 accessToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;clientToken&quot;</span>:<span class="string">&quot;新令牌的 clientToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;selectedProfile&quot;</span>:&#123;</span><br><span class="line">        <span class="comment">// ... 新令牌绑定的角色，若为空，则不需要包含（格式见 §角色信息的序列化）</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;user&quot;</span>:&#123;</span><br><span class="line">        <span class="comment">// ... 用户信息（仅当请求中 requestUser 为 true 时包含，格式见 §用户信息的序列化）</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="验证令牌"><a href="#验证令牌" class="headerlink" title="验证令牌"></a>验证令牌</h3><p><code>POST /authserver/validate</code></p>
+<p>检验令牌是否有效。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;accessToken&quot;</span>:<span class="string">&quot;令牌的 accessToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;clientToken&quot;</span>:<span class="string">&quot;令牌的 clientToken（可选）&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当指定 <code>clientToken</code> 时，服务端应检查 <code>accessToken</code> 和 <code>clientToken</code> 是否有效，否则只需要检查 <code>accessToken</code> 。</p>
+<p>若令牌有效，服务端应返回 HTTP 状态 <code>204 No Content</code>，否则作为令牌无效的异常情况处理。</p>
+<h3 id="吊销令牌"><a href="#吊销令牌" class="headerlink" title="吊销令牌"></a>吊销令牌</h3><p><code>POST /authserver/invalidate</code></p>
+<p>吊销给定令牌。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;accessToken&quot;</span>:<span class="string">&quot;令牌的 accessToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;clientToken&quot;</span>:<span class="string">&quot;令牌的 clientToken（可选）&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>服务端只需要检查 <code>accessToken</code>，即无论 <code>clientToken</code> 为何值都不会造成影响。</p>
+<p>无论操作是否成功，服务端应返回 HTTP 状态 <code>204 No Content</code>。</p>
+<h3 id="登出"><a href="#登出" class="headerlink" title="登出"></a>登出</h3><p><code>POST /authserver/signout</code></p>
+<p>吊销用户的所有令牌。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;username&quot;</span>:<span class="string">&quot;邮箱&quot;</span>,</span><br><span class="line">    <span class="string">&quot;password&quot;</span>:<span class="string">&quot;密码&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>若操作成功，服务端应返回 HTTP 状态 <code>204 No Content</code>。</p>
+<p><strong>安全提示：</strong> 该 API 也可用于判断密码的正确性，因此应受到和登录 API 一样的速率限制。</p>
+<h2 id="会话部分"><a href="#会话部分" class="headerlink" title="会话部分"></a>会话部分</h2><p><img src= "/img/loading.gif" data-lazy-src="/.com//mc%E5%85%A5%E6%9C%8D%E5%8E%9F%E7%90%86.svg" alt="Minecraft 玩家进服原理"></p>
+<blockquote>
+<p>上图使用 ProcessOn 绘制，导出为 SVG。<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/5a7fbbbae4b0812a0f102187">原始图像</a></p>
+</blockquote>
+<p>该部分用于角色进入服务器时的验证。主要流程如下：</p>
+<ol>
+<li><strong>Minecraft 服务端</strong>和 <strong>Minecraft 客户端</strong>共同生成一段字符串（<code>serverId</code>），其可以被认为是随机的</li>
+<li><strong>Minecraft 客户端</strong>将 <code>serverId</code> 及令牌发送给 <strong>Yggdrasil 服务端</strong>（要求令牌有效）</li>
+<li><strong>Minecraft 服务端</strong>请求 <strong>Yggdrasil 服务端</strong>检查客户端会话的有效性，即客户端是否成功进行第 2 步</li>
+</ol>
+<h3 id="客户端进入服务器"><a href="#客户端进入服务器" class="headerlink" title="客户端进入服务器"></a>客户端进入服务器</h3><p><code>POST /sessionserver/session/minecraft/join</code></p>
+<p>记录服务端发送给客户端的 <code>serverId</code>，以备服务端检查。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;accessToken&quot;</span>:<span class="string">&quot;令牌的 accessToken&quot;</span>,</span><br><span class="line">    <span class="string">&quot;selectedProfile&quot;</span>:<span class="string">&quot;该令牌绑定的角色的 UUID（无符号）&quot;</span>,</span><br><span class="line">    <span class="string">&quot;serverId&quot;</span>:<span class="string">&quot;服务端发送给客户端的 serverId&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>仅当 <code>accessToken</code> 有效，且 <code>selectedProfile</code> 与令牌所绑定的角色一致时，操作才成功。</p>
+<p>服务端应记录以下信息：</p>
+<ul>
+<li>serverId</li>
+<li>accessToken</li>
+<li>发送该请求的客户端 IP</li>
+</ul>
+<p>实现时请注意：以上信息应记录在内存数据库中（如 Redis），且应该设置过期时间（如 30 秒）。<br>介于 <code>serverId</code> 的随机性，可以将其作为主键。</p>
+<p>若操作成功，服务端应返回 HTTP 状态 <code>204 No Content</code>。</p>
+<h3 id="服务端验证客户端"><a href="#服务端验证客户端" class="headerlink" title="服务端验证客户端"></a>服务端验证客户端</h3><p><code>GET /sessionserver/session/minecraft/hasJoined?username=&#123;username&#125;&amp;serverId=&#123;serverId&#125;&amp;ip=&#123;ip&#125;</code></p>
+<p>检查客户端会话的有效性，即数据库中是否存在该 <code>serverId</code> 的记录，且信息正确。</p>
+<p>请求参数：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>username</td>
+<td>角色的名称</td>
+</tr>
+<tr>
+<td>serverId</td>
+<td>服务端发送给客户端的 serverId</td>
+</tr>
+<tr>
+<td>ip <em>（可选）</em></td>
+<td>在 Minecraft 服务端处获取到的客户端 IP</td>
+</tr>
+</tbody></table>
+<p><code>username</code> 需要与 <code>serverId</code> 所对应令牌所绑定的角色的名称相同。</p>
+<p>若 <code>ip</code> 参数存在，仅当其值与先前发送<a href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%BF%9B%E5%85%A5%E6%9C%8D%E5%8A%A1%E5%99%A8">进入服务器请求</a>的客户端 IP 相同时，操作才成功。</p>
+<p>响应格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="comment">// ... 令牌所绑定角色的完整信息（包含角色属性及数字签名，格式见 §角色信息的序列化）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>若操作失败，服务端应返回 HTTP 状态 <code>204 No Content</code>。</p>
+<h2 id="角色部分"><a href="#角色部分" class="headerlink" title="角色部分"></a>角色部分</h2><p>该部分用于角色信息的查询。</p>
+<h3 id="查询角色属性"><a href="#查询角色属性" class="headerlink" title="查询角色属性"></a>查询角色属性</h3><p><code>GET /sessionserver/session/minecraft/profile/&#123;uuid&#125;?unsigned=&#123;unsigned&#125;</code></p>
+<p>查询指定角色的完整信息（包含角色属性）。</p>
+<p>请求参数：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>uuid</td>
+<td>角色的 UUID（无符号）</td>
+</tr>
+<tr>
+<td>unsigned <em>（可选）</em></td>
+<td><code>true</code> 或 <code>false</code>。是否在响应中<strong>不包含</strong>数字签名，默认为 <code>true</code></td>
+</tr>
+</tbody></table>
+<p>响应格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="comment">// ... 角色信息（包含角色属性。若 unsigned 为 false，还需要包含数字签名。格式见 §角色信息的序列化）</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>若角色不存在，服务端应返回 HTTP 状态 <code>204 No Content</code>。</p>
+<h3 id="按名称批量查询角色"><a href="#按名称批量查询角色" class="headerlink" title="按名称批量查询角色"></a>按名称批量查询角色</h3><p><code>POST /api/profiles/minecraft</code></p>
+<p>批量查询角色名称所对应的角色。</p>
+<p>请求格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    <span class="string">&quot;角色名称&quot;</span></span><br><span class="line">    <span class="comment">// ,... 还可以有更多</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>服务端查询各个角色名称所对应的角色信息，并将其包含在响应中。不存在的角色不需要包含。响应中角色信息的先后次序无要求。</p>
+<p>响应格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 角色信息（注意：不包含角色属性。格式见 §角色信息的序列化）</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ,...（可以有更多）</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p><strong>安全提示：</strong> 为防止 CC 攻击，需要为单次查询的角色数目设置最大值，该值至少为 2。</p>
+<h1 id="扩展-API"><a href="#扩展-API" class="headerlink" title="扩展 API"></a>扩展 API</h1><p>以下 API 并不属于 Yggdrasil，它们是为了方便 authlib-injector 进行自动配置而设计的。</p>
+<h2 id="服务端信息获取"><a href="#服务端信息获取" class="headerlink" title="服务端信息获取"></a>服务端信息获取</h2><p><code>GET /</code></p>
+<p>响应格式：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;meta&quot;</span>:&#123;</span><br><span class="line">        <span class="comment">// 服务端的元数据，内容任意</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;skinDomains&quot;</span>:[ <span class="comment">// 加入皮肤白名单的域名后缀</span></span><br><span class="line">        <span class="string">&quot;皮肤域名后缀 1&quot;</span></span><br><span class="line">        <span class="comment">// ,...（可以有更多）</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">&quot;signaturePublickey&quot;</span>:<span class="string">&quot;用于验证数字签名的公钥&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Minecraft 对提供材质的域名有严格限制。仅当材质来自以 <code>.minecraft.net</code>、<code>.mojang.com</code> 或 <code>skinDomains</code> 中任意一项结尾的域名时，Minecraft 才会加载此材质。</p>
+<p><code>signaturePublickey</code> 是 PEM 格式的公钥，用于验证角色属性的数字签名。其以 <code>-----BEGIN PUBLIC KEY-----</code> 开头，以 <code>-----END PUBLIC KEY-----</code> 结尾，中间允许出现换行符，但不允许出现其他空白字符（亦允许文末出现换行符）。</p>
+<p>尽管 <code>meta</code> 中内容没有强制要求，但我们建议您包含以下属性：</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>serverName</td>
+<td>服务器名称</td>
+</tr>
+<tr>
+<td>implementationName</td>
+<td>服务端实现的名称</td>
+</tr>
+<tr>
+<td>implementationVersion</td>
+<td>服务端实现的版本</td>
+</tr>
+</tbody></table>
+<p>下面给出一段响应的示例：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;meta&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;implementationName&quot;</span>: <span class="string">&quot;yggdrasil-mock-server&quot;</span>,</span><br><span class="line">        <span class="string">&quot;implementationVersion&quot;</span>: <span class="string">&quot;0.0.1-SNAPSHOT-e60f4d5&quot;</span>,</span><br><span class="line">        <span class="string">&quot;serverName&quot;</span>: <span class="string">&quot;yushijinhun&#x27;s Yggdrasil Example Server&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;skinDomains&quot;</span>: [</span><br><span class="line">        <span class="string">&quot;.yushi.moe&quot;</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">&quot;signaturePublickey&quot;</span>: <span class="string">&quot;-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAnhEHrOIVm2ReCJIIR/1RHAHzkoJjpS8t\nIVfu+JWQKFd4SiVfc/Ym1T2rsmoWVtlppOcWYLSv3XVzpSJS1yk79p6cmASUPU9ENotFMCCi+sdT\nAVo/RKV7mxZHiz8g3H3JdegGMA1nEiYV5l9ue233d4/2MytXjKF8DVskkWZbfN6pRTiaCsRyjt40\nC3XhThBQzVIyjs75fpGNImjCvNlw2Dpy+AvdcLlT75hmGM8UBh8bkshNwBl0JDsE8SL9Qanen2Tk\noXVFoAMKoUsu1u0Kfwjzit52CutU2JXSSxp68KntcKA5d11520Vt51OvRGnNnOtMg6Qqgql56tAL\niy9HJAZpA1In6Kc6epK9vDH7AqZd9QRPBcTsGFdoO8MqegIJZK0zxQY4jCshO0Sxk/EAY5MdwBtB\nr/hGel5JkZByJqanZYV4dKlmNqTZk9hoakv1cb3e8ku2dXRgvtjJvkFayQFqQYpXgLX4ZIx1V87c\nHb1L5RGyAfB5y+UpPW+igMTRgIKN0OWHroTI9W+hSNFjAVj7XPWwp3vRBhdSABiOL7IHsk8e4VcE\nwiAuYGtRi8o/7IJpiZBBh1UkzQ/m1H7ohzjduvc0pYtp053YOx9Tmf0gj8U3dYNiE1gmfBDRnDwJ\nBxCKAYEv9g1uPC0yeJr7EN06Dbb6QQMA+CsbOSS50A0CAwEAAQ==\n-----END PUBLIC KEY-----\n&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="API-地址指示（ALI）"><a href="#API-地址指示（ALI）" class="headerlink" title="API 地址指示（ALI）"></a>API 地址指示（ALI）</h1><p>API 地址指示（API Location Indication，简称 ALI）是一个 HTTP 响应头字段 <code>X-Authlib-Injector-API-Location</code>。ALI 的值为相对 URL 或绝对 URL，它指向与当前页面相关联的 Yggdrasil API。</p>
+<p>使用 ALI 后，用户只需输入一个与 Yggdrasil API 相关联的地址即可，不必输入真正的 API 地址。例如，<code>https://skin.example.com/api/yggdrasil/</code> 可以被简化为 <code>skin.example.com</code>。支持 ALI 的启动器会请求 <code>(https://)skin.example.com</code>，识别响应中的 ALI 头字段，并根据它找到真正的 API 地址。</p>
+<p>皮肤站可以在首页，或在全站启用 ALI。启用 ALI 的方法为在 HTTP 响应中添加 <code>X-Authlib-Injector-API-Location</code> 头字段，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X-Authlib-Injector-API-Location: &#x2F;api&#x2F;yggdrasil&#x2F;  # 使用相对 URL</span><br><span class="line">X-Authlib-Injector-API-Location: https:&#x2F;&#x2F;skin.example.com&#x2F;api&#x2F;yggdrasil&#x2F;  # 亦可使用绝对 URL，支持跨域</span><br></pre></td></tr></table></figure>
+
+<p>当一个页面的 ALI 指向其本身时，这个 ALI 会被忽略。ALI 支持多次重定向（即 A 页面的 ALI 指向 B 页面，B 页面的 ALI 指向 C 页面），但重定向次数有限制（一般为 5 次）。</p>
+<h1 id="参见"><a href="#参见" class="headerlink" title="参见"></a>参见</h1><ul>
+<li><a target="_blank" rel="noopener" href="http://wiki.vg/Authentication">Authentication - wiki.vg</a></li>
+<li><a target="_blank" rel="noopener" href="http://wiki.vg/Mojang_API">Mojang API - wiki.vg</a></li>
+<li><a target="_blank" rel="noopener" href="http://wiki.vg/Protocol">Protocol - wiki.vg</a></li>
+</ul>
+<h1 id="参考实现"><a href="#参考实现" class="headerlink" title="参考实现"></a>参考实现</h1><p><a target="_blank" rel="noopener" href="https://github.com/yushijinhun/yggdrasil-mock">yggdrasil-mock</a> 为本规范的参考实现。</p>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">John Doe</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="http://yoursite.com/2020/08/15/Yggdrasil-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%8A%80%E6%9C%AF%E8%A7%84%E8%8C%83/">http://yoursite.com/2020/08/15/Yggdrasil-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E6%8A%80%E6%9C%AF%E8%A7%84%E8%8C%83/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Yggdrasil/">Yggdrasil</a></div><div class="post_share"><div class="social-share" data-image="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2020/08/14/20200814/"><img class="next-cover" data-lazy-src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Hexo博客新建文章并发布</div></div></a></div></nav></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020 By John Doe</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><section id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="font_plus" type="button" title="Increase Font Size"><i class="fas fa-plus"></i></button><button id="font_minus" type="button" title="Decrease Font Size"><i class="fas fa-minus"></i></button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></section><div><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script><div class="js-pjax"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></body></html>
